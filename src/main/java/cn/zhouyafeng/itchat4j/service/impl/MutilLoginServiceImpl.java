@@ -32,6 +32,7 @@ import cn.zhouyafeng.itchat4j.service.IMutilLoginService;
 import cn.zhouyafeng.itchat4j.utils.Config;
 import cn.zhouyafeng.itchat4j.utils.MyHttpClient;
 import cn.zhouyafeng.itchat4j.utils.SleepUtils;
+import cn.zhouyafeng.itchat4j.utils.enums.QRType;
 import cn.zhouyafeng.itchat4j.utils.enums.ResultEnum;
 import cn.zhouyafeng.itchat4j.utils.enums.RetCodeEnum;
 import cn.zhouyafeng.itchat4j.utils.enums.StorageLoginInfoEnum;
@@ -41,7 +42,13 @@ import cn.zhouyafeng.itchat4j.utils.enums.parameters.LoginParaEnum;
 import cn.zhouyafeng.itchat4j.utils.enums.parameters.StatusNotifyParaEnum;
 import cn.zhouyafeng.itchat4j.utils.enums.parameters.UUIDParaEnum;
 import cn.zhouyafeng.itchat4j.utils.tools.CommonTools;
+import cn.zhouyafeng.itchat4j.utils.tools.ImageTools;
 
+/**
+ * @author www.jogeen.top
+ * @date 2018年4月28日
+ * @version 1.0
+ */
 public class MutilLoginServiceImpl implements IMutilLoginService {
 	private static Logger LOG = LoggerFactory.getLogger(LoginServiceImpl.class);
 
@@ -50,6 +57,8 @@ public class MutilLoginServiceImpl implements IMutilLoginService {
 	private MyHttpClient myHttpClient;
 
 	private MultiCore core;
+
+	private String uuid;
 
 	public MutilLoginServiceImpl() {
 		core = new MultiCore();
@@ -146,6 +155,36 @@ public class MutilLoginServiceImpl implements IMutilLoginService {
 		}
 
 		return true;
+	}
+
+	@Override
+	public String getQRForType(String qrPath, QRType type) {
+		if (type.equals(QRType.BASE64_STRING)) {
+			qrPath = qrPath + File.separator + uuid + ".jpg";
+			String qrUrl = URLEnum.QRCODE_URL.getUrl() + core.getUuid();
+			HttpEntity entity = myHttpClient.doGet(qrUrl, null, true, null);
+			try {
+				OutputStream out = new FileOutputStream(qrPath);
+				byte[] bytes = EntityUtils.toByteArray(entity);
+				out.write(bytes);
+				out.flush();
+				out.close();
+				try {
+					String imageStr = ImageTools.getImageStr(qrPath);
+					return imageStr;
+				} catch (Exception e) {
+					LOG.info(e.getMessage());
+				}
+
+			} catch (Exception e) {
+				LOG.info(e.getMessage());
+				return null;
+			}
+			return qrUrl;
+		} else {
+			boolean qr = getQR(qrPath);
+			return "" + qr;
+		}
 	}
 
 	@Override
@@ -487,10 +526,10 @@ public class MutilLoginServiceImpl implements IMutilLoginService {
 				LOG.info(e.getMessage());
 				return;
 			}
-			//add by 默非默 2017-08-01 22:28:09
-			//如果登录被禁止时，则登录返回的message内容不为空，下面代码则判断登录内容是否为空，不为空则退出程序
+			// add by 默非默 2017-08-01 22:28:09
+			// 如果登录被禁止时，则登录返回的message内容不为空，下面代码则判断登录内容是否为空，不为空则退出程序
 			String msg = getLoginMessage(text);
-			if (!"".equals(msg)){
+			if (!"".equals(msg)) {
 				LOG.info(msg);
 				System.exit(0);
 			}
@@ -665,13 +704,14 @@ public class MutilLoginServiceImpl implements IMutilLoginService {
 
 	/**
 	 * 解析登录返回的消息，如果成功登录，则message为空
+	 * 
 	 * @param result
 	 * @return
 	 */
-	public String getLoginMessage(String result){
+	public String getLoginMessage(String result) {
 		String[] strArr = result.split("<message>");
 		String[] rs = strArr[1].split("</message>");
-		if (rs!=null && rs.length>1) {
+		if (rs != null && rs.length > 1) {
 			return rs[0];
 		}
 		return "";

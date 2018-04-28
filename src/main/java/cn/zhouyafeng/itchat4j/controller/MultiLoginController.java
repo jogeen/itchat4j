@@ -1,85 +1,108 @@
 package cn.zhouyafeng.itchat4j.controller;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cn.zhouyafeng.itchat4j.api.WechatTools;
+import com.alibaba.fastjson.JSONObject;
+
+import cn.zhouyafeng.itchat4j.beans.User;
 import cn.zhouyafeng.itchat4j.core.MultiCore;
 import cn.zhouyafeng.itchat4j.service.IMutilLoginService;
 import cn.zhouyafeng.itchat4j.service.impl.MutilLoginServiceImpl;
-import cn.zhouyafeng.itchat4j.thread.CheckLoginStatusThread;
-import cn.zhouyafeng.itchat4j.utils.SleepUtils;
-import cn.zhouyafeng.itchat4j.utils.tools.CommonTools;
+import cn.zhouyafeng.itchat4j.utils.enums.QRType;
 
 /**
- * @author jogeen
- *
+ * 多用户登录的控制类
+ * @author www.jogeen.top
+ * @date 2018年4月28日
+ * @version 1.0
  */
 public class MultiLoginController {
-	
 	private static Logger LOG = LoggerFactory.getLogger(MultiLoginController.class);
-	private IMutilLoginService loginService = new MutilLoginServiceImpl();
 
-	public void login(String qrPath) {
-		MultiCore multiCore = loginService.getMultiCore();
-		if (multiCore.isAlive()) { // 已登陆
-			LOG.info("itchat4j已登陆");
-			return;
-		}
-		while (true) {
-			for (int count = 0; count < 10; count++) {
-				LOG.info("获取UUID");
-				while (loginService.getUuid() == null) {
-					LOG.info("1. 获取微信UUID");
-					while (loginService.getUuid() == null) {
-						LOG.warn("1.1. 获取微信UUID失败，两秒后重新获取");
-						SleepUtils.sleep(2000);
-					}
-				}
-				LOG.info("2. 获取登陆二维码图片");
-				if (loginService.getQR(qrPath)) {
-					break;
-				} else if (count == 10) {
-					LOG.error("2.2. 获取登陆二维码图片失败，系统退出");
-					System.exit(0);
-				}
+	/**
+	 * 服务管理的map
+	 */
+	private Map<String, IMutilLoginService> waitServiceMap = new ConcurrentHashMap<>();
+	private Map<String, IMutilLoginService> onLineServiceMap = new ConcurrentHashMap<>();
+	private Map<String, Long> waitServiceTimeMap = new ConcurrentHashMap<>();
+	private static MultiLoginController instance;
+	private static String qrPath = "";
+
+	public Map<String, IMutilLoginService> getWaitServiceMap() {
+		return waitServiceMap;
+	}
+
+	public Map<String, IMutilLoginService> getOnLineServiceMap() {
+		return onLineServiceMap;
+	}
+
+	public static MultiLoginController getInstance(String path) {
+		if (instance == null) {
+			synchronized (MultiLoginController.class) {
+				instance = new MultiLoginController();
 			}
-			LOG.info("3. 请扫描二维码图片，并在手机上确认");
-			if (!multiCore.isAlive()) {
-				loginService.login();
-				multiCore.setAlive(true);
-				LOG.info(("登陆成功"));
-				break;
+		}
+		if (qrPath != null) {
+			qrPath = path;
+		}
+		return instance;
+	}
+
+	public static MultiLoginController getInstance() {
+		if (instance == null) {
+			synchronized (MultiLoginController.class) {
+				instance = new MultiLoginController();
 			}
-			LOG.info("4. 登陆超时，请重新扫描二维码图片");
 		}
+		return instance;
+	}
 
-		LOG.info("5. 登陆成功，微信初始化");
-		if (!loginService.webWxInit()) {
-			LOG.info("6. 微信初始化异常");
-			System.exit(0);
+	public String getLoginUuid() {
+		IMutilLoginService mutilLoginService = new MutilLoginServiceImpl();
+		String uuid = mutilLoginService.getUuid();
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("发起一次登录uuid请求,{}", uuid);
 		}
+		if (uuid != null) {
+			waitServiceMap.put(uuid, mutilLoginService);
+			waitServiceTimeMap.put(uuid, System.currentTimeMillis());
+		}
+		return uuid;
+	}
 
-		LOG.info("6. 开启微信状态通知");
-		loginService.wxStatusNotify();
+	public String getLoginQrCode(String uuid) {
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("发起一次登录二维码请求,{}", uuid);
+		}
+		IMutilLoginService mutilLoginService = getMutilLoginService(uuid);
+		String qrString = mutilLoginService.getQRForType(qrPath, QRType.BASE64_STRING);
+		return qrString;
+	}
 
-		LOG.info("7. 清除。。。。");
-		CommonTools.clearScreen();
-		LOG.info(String.format("欢迎回来， %s", multiCore.getNickName()));
+	public User getloginResult(String uuid) {
+		IMutilLoginService mutilLoginService = getMutilLoginService(uuid);
+		MultiCore multiCore = mutilLoginService.getMultiCore();
+		if (multiCore.isAlive()) {
+			JSONObject userSelf = multiCore.getUserSelf();
+			User user = userSelf.toJavaObject(User.class);
+			return user;
+		}
+		return null;
+	}
 
-		LOG.info("8. 开始接收消息");
-		loginService.startReceiving();
-
-		LOG.info("9. 获取联系人信息");
-		loginService.webWxGetContact();
-
-		LOG.info("10. 获取群好友及群好友列表");
-		loginService.WebWxBatchGetContact();
-
-		LOG.info("11. 缓存本次登陆好友相关消息");
-		WechatTools.setUserInfo(); // 登陆成功后缓存本次登陆好友相关消息（NickName, UserName）
-
-		LOG.info("12.开启微信状态检测线程");
-		new Thread(new CheckLoginStatusThread()).start();
+	private IMutilLoginService getMutilLoginService(String uuid) {
+		if (uuid == null) {
+			throw new RuntimeException("uuid不能为空");
+		}
+		IMutilLoginService mutilLoginService = waitServiceMap.get(uuid);
+		if (mutilLoginService == null) {
+			LOG.debug("登录过期,{}", uuid);
+			throw new RuntimeException("登录过去");
+		}
+		return mutilLoginService;
 	}
 }

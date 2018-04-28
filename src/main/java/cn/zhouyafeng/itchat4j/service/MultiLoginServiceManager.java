@@ -10,17 +10,18 @@ import cn.zhouyafeng.itchat4j.core.Core;
 import cn.zhouyafeng.itchat4j.core.MultiCore;
 import cn.zhouyafeng.itchat4j.core.MultiCoreManager;
 
+/**
+ * @author www.jogeen.top
+ * @date 2018年4月28日
+ * @version 1.0
+ */
 public class MultiLoginServiceManager {
 
 	private static Logger LOG = LoggerFactory.getLogger(MultiCoreManager.class);
 
 	private static MultiLoginServiceManager instance;
 
-	private static boolean isChecking = true;
-
-	private static Thread checkThread = null;
-
-	private static Map<String, MultiCore> multiCoreMap = new ConcurrentHashMap<>();
+	private static Map<String, IMutilLoginService> multiCoreMap = new ConcurrentHashMap<>();
 
 	private MultiLoginServiceManager() {
 	}
