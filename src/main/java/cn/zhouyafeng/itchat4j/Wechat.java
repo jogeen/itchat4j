@@ -3,6 +3,7 @@ package cn.zhouyafeng.itchat4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import cn.zhouyafeng.itchat4j.beans.BaseMsg;
 import cn.zhouyafeng.itchat4j.controller.LoginController;
 import cn.zhouyafeng.itchat4j.core.MsgCenter;
 import cn.zhouyafeng.itchat4j.face.IMsgHandlerFace;
@@ -28,6 +29,58 @@ public class Wechat {
 				MsgCenter.handleMsg(msgHandler);
 			}
 		}).start();
+	}
+	public static void main(String[] args) {
+		new Wechat(new IMsgHandlerFace() {
+			
+			@Override
+			public String voiceMsgHandle(BaseMsg msg) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+			
+			@Override
+			public String viedoMsgHandle(BaseMsg msg) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+			
+			@Override
+			public String verifyAddFriendMsgHandle(BaseMsg msg) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+			
+			@Override
+			public String textMsgHandle(BaseMsg msg) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+			
+			@Override
+			public void sysMsgHandle(BaseMsg msg) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public String picMsgHandle(BaseMsg msg) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+			
+			@Override
+			public String nameCardMsgHandle(BaseMsg msg) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+			
+			@Override
+			public String mediaMsgHandle(BaseMsg msg) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+		},"").start();
 	}
 
 }
