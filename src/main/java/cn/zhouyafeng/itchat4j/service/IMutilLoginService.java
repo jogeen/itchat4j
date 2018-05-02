@@ -1,6 +1,7 @@
 package cn.zhouyafeng.itchat4j.service;
 
 import cn.zhouyafeng.itchat4j.core.MultiCore;
+import cn.zhouyafeng.itchat4j.face.IMsgHandlerFace;
 import cn.zhouyafeng.itchat4j.utils.enums.QRType;
 
 /**
@@ -17,6 +18,8 @@ public interface IMutilLoginService extends ILoginService{
 	 */
 	MultiCore getMultiCore();
 
-	String getQRForType(String qrPath, QRType QRType); 
+	String getQRForType(String qrPath, QRType QRType);
+
+	void handleMsg(); 
 
 }

@@ -8,6 +8,7 @@ import java.util.Map;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
+import cn.zhouyafeng.itchat4j.api.MultiMessageTools;
 import cn.zhouyafeng.itchat4j.beans.BaseMsg;
 import cn.zhouyafeng.itchat4j.utils.MyHttpClient;
 import cn.zhouyafeng.itchat4j.utils.enums.parameters.BaseParaEnum;
@@ -15,9 +16,10 @@ import cn.zhouyafeng.itchat4j.utils.enums.parameters.BaseParaEnum;
 public class MultiCore {
 
 	public MultiCore() {
-
+		multiMessageTools = new MultiMessageTools(this);
 	}
 
+	private MultiMessageTools multiMessageTools;
 	boolean alive = false;
 	private int memberCount = 0;
 
@@ -49,7 +51,6 @@ public class MultiCore {
 	int receivingRetryCount = 5;
 
 	private long lastNormalRetcodeTime; // 最后一次收到正常retcode的时间，秒为单位
-	
 
 	/**
 	 * 请求参数
@@ -254,7 +255,5 @@ public class MultiCore {
 	public void setLastNormalRetcodeTime(long lastNormalRetcodeTime) {
 		this.lastNormalRetcodeTime = lastNormalRetcodeTime;
 	}
-	
-	
-	
+
 }
