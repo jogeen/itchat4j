@@ -2,6 +2,7 @@ package cn.zhouyafeng.itchat4j.thread;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +25,8 @@ import cn.zhouyafeng.itchat4j.utils.SleepUtils;
  * @version 1.0
  *
  */
-public class CheckMultiLoginStatusThread implements Runnable {
-	private static Logger LOG = LoggerFactory.getLogger(CheckMultiLoginStatusThread.class);
+public class MessageReceivThread implements Runnable {
+	private static Logger LOG = LoggerFactory.getLogger(MessageReceivThread.class);
 	private MultiLoginController multiLoginController = MultiLoginController.getInstance();
 
 	@Override
@@ -36,17 +37,14 @@ public class CheckMultiLoginStatusThread implements Runnable {
 				Set<String> keySet = serviceMap.keySet();
 				for (String key : keySet) {
 					IMutilLoginService mutilLoginService = serviceMap.get(key);
-					MultiCore multiCore = mutilLoginService.getMultiCore();
-					long t1 = System.currentTimeMillis(); // 秒为单位
-					if (t1 - multiCore.getLastNormalRetcodeTime() > 60 * 1000) { // 超过60秒，判为离线
-						multiCore.setAlive(false);
-						LOG.info("{},微信已离线", key);
-						serviceMap.remove(key);
-					}
+					mutilLoginService.startReceiving();
 				}
 			}
-			LOG.info("当前在线用户数:,{}", serviceMap.size());
-			SleepUtils.sleep(10 * 1000); // 休眠10秒
+			try {
+				TimeUnit.SECONDS.sleep(15);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 

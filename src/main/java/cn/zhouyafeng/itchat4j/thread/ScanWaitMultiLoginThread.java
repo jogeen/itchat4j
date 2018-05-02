@@ -37,8 +37,6 @@ public class ScanWaitMultiLoginThread implements Runnable {
 					LOG.info("6. 开启微信状态通知");
 					mutilLoginService.wxStatusNotify();
 					LOG.info(String.format("欢迎回来， %s", core.getNickName()));
-					LOG.info("8. 开始接收消息");
-					mutilLoginService.startReceiving();
 					LOG.info("9. 获取联系人信息");
 					mutilLoginService.webWxGetContact();
 					LOG.info("10. 获取群好友及群好友列表");

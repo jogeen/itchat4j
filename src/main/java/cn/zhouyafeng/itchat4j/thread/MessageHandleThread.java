@@ -24,8 +24,8 @@ import cn.zhouyafeng.itchat4j.utils.SleepUtils;
  * @version 1.0
  *
  */
-public class CheckMultiLoginStatusThread implements Runnable {
-	private static Logger LOG = LoggerFactory.getLogger(CheckMultiLoginStatusThread.class);
+public class MessageHandleThread implements Runnable {
+	private static Logger LOG = LoggerFactory.getLogger(MessageHandleThread.class);
 	private MultiLoginController multiLoginController = MultiLoginController.getInstance();
 
 	@Override
@@ -36,13 +36,7 @@ public class CheckMultiLoginStatusThread implements Runnable {
 				Set<String> keySet = serviceMap.keySet();
 				for (String key : keySet) {
 					IMutilLoginService mutilLoginService = serviceMap.get(key);
-					MultiCore multiCore = mutilLoginService.getMultiCore();
-					long t1 = System.currentTimeMillis(); // 秒为单位
-					if (t1 - multiCore.getLastNormalRetcodeTime() > 60 * 1000) { // 超过60秒，判为离线
-						multiCore.setAlive(false);
-						LOG.info("{},微信已离线", key);
-						serviceMap.remove(key);
-					}
+					mutilLoginService.handleMsg();
 				}
 			}
 			LOG.info("当前在线用户数:,{}", serviceMap.size());
